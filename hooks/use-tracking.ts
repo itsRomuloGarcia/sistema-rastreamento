@@ -107,8 +107,7 @@ const validateAndCleanData = (rawData: any[]): TrackingData[] => {
           Transportadora: item.Transportadora ? String(item.Transportadora).trim() : 'N/A',
           'Valor do Produto': item['Valor do Produto'] ? String(item['Valor do Produto']).trim() : 'R$ 0,00',
           Quantidade: item.Quantidade ? Number(item.Quantidade) || 1 : 1,
-          'Tipo do Produto': item['Tipo do Produto'] ? String(item['Tipo do Produto']).trim() : 'N/A',
-          'Valor do Transporte': item['Valor do Transporte'] ? String(item['Valor do Transporte']).trim() : 'R$ 0,00',
+          'Tipo do Produto': item['Tipo do Produto'] ? String(item['Tipo do Produto']).trim() : 'N/A',          
           Modelo: item.Modelo ? String(item.Modelo).trim() : 'N/A'
         }
       } catch (error) {
