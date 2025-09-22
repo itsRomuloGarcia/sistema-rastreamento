@@ -155,8 +155,7 @@ export function TrackingResult({ data }: TrackingResultProps) {
               <DollarSign className="w-5 h-5 text-gray-400" />
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Valores</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">{data['Valor do Produto']}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Frete: {data['Valor do Transporte']}</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{data['Valor do Produto']}</p>                
               </div>
             </div>
           </div>
