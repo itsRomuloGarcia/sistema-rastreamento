@@ -71,7 +71,7 @@ export function TrackingResult({ data }: TrackingResultProps) {
       {/* Timing Info */}
       {(daysInTransit !== null || daysUntilDelivery !== null) && (
         <div className="card">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Informações de Tempo</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Tempo de entrega</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data['Data de Entrega'] && daysInTransit !== null && (
               <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
