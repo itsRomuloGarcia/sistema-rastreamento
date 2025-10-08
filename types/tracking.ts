@@ -12,6 +12,7 @@ export interface TrackingData {
   'Tipo do Produto': string
   'Valor do Transporte': string
   Modelo: string
+  Cliente: string
 }
 
 export interface TrackingStatus {
