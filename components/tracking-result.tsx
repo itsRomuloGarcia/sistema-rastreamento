@@ -33,6 +33,7 @@ export function TrackingResult({ data }: TrackingResultProps) {
               <FileText className="w-4 h-4" />
               NF {data['Nota Fiscal']} • {data['Tipo do Produto']} - {data.Modelo}
             </p>
+            <div><p><strong>Cliente:</strong> {data.Cliente}</p></div>
           </div>
           <div className={`px-3 py-1 rounded-full text-sm font-medium ${status.color} ${status.bgColor}`}>
             {status.label}
