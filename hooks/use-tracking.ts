@@ -201,8 +201,8 @@ export function useTrackingSearch(query: string) {
       if (!queryTrimmed) return false
 
       return pedido === queryTrimmed || 
-             notaFiscal === queryTrimmed ||
-             pedido.includes(queryTrimmed) 
+             notaFiscal === queryTrimmed 
+             //pedido.includes(queryTrimmed) 
              //notaFiscal.includes(queryTrimmed)
     } catch (error) {
       console.warn('Erro na busca:', error)
