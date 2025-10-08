@@ -108,7 +108,8 @@ const validateAndCleanData = (rawData: any[]): TrackingData[] => {
           'Valor do Produto': item['Valor do Produto'] ? String(item['Valor do Produto']).trim() : 'R$ 0,00',
           Quantidade: item.Quantidade ? Number(item.Quantidade) || 1 : 1,
           'Tipo do Produto': item['Tipo do Produto'] ? String(item['Tipo do Produto']).trim() : 'N/A',          
-          Modelo: item.Modelo ? String(item.Modelo).trim() : 'N/A'
+          Modelo: item.Modelo ? String(item.Modelo).trim() : 'N/A',
+          Cliente: item.Cliente ? String(item.Cliente).trim() : 'N/A'
         }
       } catch (error) {
         console.warn('Erro ao processar item:', item, error)
