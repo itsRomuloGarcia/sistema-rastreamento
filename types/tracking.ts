@@ -1,23 +1,23 @@
 export interface TrackingData {
   Pedido: number
-  'Data de Envio': string
-  'Previsao de Entrega': string
-  'Data de Entrega'?: string
+  QEPTA: number
+  CNPJ?: string
+  'Data de Envio': string  // Mantém como string dd/MM/yyyy
+  'Previsao de Entrega': string  // Mantém como string dd/MM/yyyy
+  'Data de Entrega'?: string  // Mantém como string dd/MM/yyyy
   'Nota Fiscal': number
   Cidade: string
   Estado: string
   Transportadora: string
   'Valor do Produto': string
+  'Valor do Transporte'?: string
   Quantidade: number
   'Tipo do Produto': string
-  'Valor do Transporte': string
   Modelo: string
   Cliente: string
-}
-
-export interface TrackingStatus {
-  status: 'pending' | 'shipped' | 'delivered' | 'delayed'
-  label: string
-  color: string
-  bgColor: string
+  'Comprovante URL'?: string
+  'Tempo de Entrega'?: number | null
+  'Status Totem'?: string
+  'Numero Serie'?: string
+  'Nome Fantasia'?: string
 }
