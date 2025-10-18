@@ -3,21 +3,40 @@
 import { useQuery } from '@tanstack/react-query'
 import * as XLSX from 'xlsx'
 import { TrackingData } from '@/types/tracking'
-import { parse, parseISO, isValid, differenceInDays } from 'date-fns'
 
 const SHEET_URL = process.env.NEXT_PUBLIC_SHEET_URL || ''
 
-function parseDate(dateStr: string): Date | null {
-  if (!dateStr || dateStr === 'N/A' || dateStr.trim() === '') return null
+function parseDate(dateStr: string | number): Date | null {
+  if (!dateStr || dateStr === 'N/A' || (typeof dateStr === 'string' && dateStr.trim() === '')) return null
 
   try {
-    // Tentar formato brasileiro dd/MM/yyyy
-    const parsed = parse(dateStr.trim(), 'dd/MM/yyyy', new Date())
-    if (isValid(parsed)) return parsed
+    // Se for número (serial date do Excel)
+    if (typeof dateStr === 'number') {
+      // Converte serial date do Excel para data JavaScript
+      const excelEpoch = new Date(1899, 11, 30) // 30 de dezembro de 1899
+      const date = new Date(excelEpoch.getTime() + dateStr * 86400000)
+      return date
+    }
 
-    // Fallback para ISO
-    const iso = parseISO(dateStr)
-    if (isValid(iso)) return iso
+    // Se for string no formato dd/mm/yyyy
+    const dateString = String(dateStr).trim()
+    const [day, month, year] = dateString.split('/').map(Number)
+    
+    // Valida os valores
+    if (!day || !month || !year || day < 1 || day > 31 || month < 1 || month > 12) {
+      return null
+    }
+    
+    // Cria a data às 12h para evitar problemas de timezone
+    const parsed = new Date(year, month - 1, day, 12, 0, 0, 0)
+    
+    // Verificação rigorosa
+    if (parsed.getDate() === day && 
+        parsed.getMonth() === month - 1 && 
+        parsed.getFullYear() === year) {
+      return parsed
+    }
+    
   } catch (error) {
     console.warn('Erro ao fazer parse da data:', dateStr, error)
   }
@@ -32,7 +51,14 @@ export function calculateDays(startDate: string, endDate?: string): number | nul
   const end = endDate ? parseDate(endDate) : new Date()
   if (!end) return null
 
-  return differenceInDays(end, start)
+  // Calcula diferença em dias usando horário local
+  const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime()
+  const endMidnight = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime()
+  
+  const diffTime = endMidnight - startMidnight
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+  return diffDays
 }
 
 export function getTrackingStatus(data: TrackingData) {
@@ -79,44 +105,47 @@ export function getTrackingStatus(data: TrackingData) {
 // VALIDAÇÃO REFORÇADA - evita erros nas linhas
 const validateAndCleanData = (rawData: any[]): TrackingData[] => {
   if (!Array.isArray(rawData)) {
-    console.warn('Dados não são um array:', rawData)
     return []
   }
 
   return rawData
     .filter(item => {
-      // Filtrar apenas itens válidos
       if (!item || typeof item !== 'object') return false
-
-      // Deve ter pelo menos Pedido OU Nota Fiscal
-      const hasPedido = item.Pedido && (typeof item.Pedido === 'number' || typeof item.Pedido === 'string')
-      const hasNF = item['Nota Fiscal'] && (typeof item['Nota Fiscal'] === 'number' || typeof item['Nota Fiscal'] === 'string')
-
-      return hasPedido || hasNF
+      return (item['Sênior'] || item['QEPTA'] || item['NF.'])
     })
     .map(item => {
       try {
+        const pedidoSenior = item['Sênior'] && String(item['Sênior']).trim() !== '' 
+          ? Number(String(item['Sênior']).trim()) 
+          : 0
+        
+        const pedidoQepta = item['QEPTA'] && String(item['QEPTA']).trim() !== '' 
+          ? Number(String(item['QEPTA']).trim()) 
+          : 0
+        
+        const pedidoFinal = pedidoSenior || pedidoQepta
+
         return {
-          Pedido: item.Pedido ? Number(item.Pedido) || 0 : 0,
+          Pedido: pedidoFinal,
+          QEPTA: pedidoQepta,
           'Data de Envio': item['Data de Envio'] ? String(item['Data de Envio']).trim() : 'N/A',
-          'Previsao de Entrega': item['Previsao de Entrega'] ? String(item['Previsao de Entrega']).trim() : 'N/A',
-          'Data de Entrega': item['Data de Entrega'] ? String(item['Data de Entrega']).trim() : undefined,
-          'Nota Fiscal': item['Nota Fiscal'] ? Number(item['Nota Fiscal']) || 0 : 0,
-          Cidade: item.Cidade ? String(item.Cidade).trim() : 'N/A',
-          Estado: item.Estado ? String(item.Estado).trim() : 'N/A',
-          Transportadora: item.Transportadora ? String(item.Transportadora).trim() : 'N/A',
-          'Valor do Produto': item['Valor do Produto'] ? String(item['Valor do Produto']).trim() : 'R$ 0,00',
-          Quantidade: item.Quantidade ? Number(item.Quantidade) || 1 : 1,
-          'Tipo do Produto': item['Tipo do Produto'] ? String(item['Tipo do Produto']).trim() : 'N/A',          
-          Modelo: item.Modelo ? String(item.Modelo).trim() : 'N/A',
-          Cliente: item.Cliente ? String(item.Cliente).trim() : 'N/A'
+          'Previsao de Entrega': item['Prev. Entrega'] ? String(item['Prev. Entrega']).trim() : 'N/A',
+          'Data de Entrega': item['Data Entrega'] ? String(item['Data Entrega']).trim() : undefined,
+          'Nota Fiscal': item['NF.'] ? Number(String(item['NF.']).trim()) || 0 : 0,
+          Cidade: item['Cidade'] ? String(item['Cidade']).trim() : 'N/A',
+          Estado: item['UF'] ? String(item['UF']).trim() : 'N/A',
+          Transportadora: item['Transportadora'] ? String(item['Transportadora']).trim() : 'N/A',
+          'Valor do Produto': item['Valor NFe'] ? String(item['Valor NFe']).trim() : 'R$ 0,00',
+          Quantidade: item['Quantidade'] ? Number(item['Quantidade']) || 1 : 1,
+          'Tipo do Produto': item['Material'] ? String(item['Material']).trim() : 'N/A',
+          Modelo: item['MODELO'] ? String(item['MODELO']).trim() : 'N/A',
+          Cliente: item['Cliente'] ? String(item['Cliente']).trim() : 'N/A'
         }
-      } catch (error) {
-        console.warn('Erro ao processar item:', item, error)
+      } catch {
         return null
       }
     })
-    .filter(Boolean) as TrackingData[] // Remove nulls
+    .filter(Boolean) as TrackingData[]
 }
 
 export function useSheetData() {
@@ -127,8 +156,6 @@ export function useSheetData() {
         if (!SHEET_URL) {
           throw new Error('URL da planilha não configurada')
         }
-
-        console.log('🔄 Buscando dados da planilha...')
 
         const response = await fetch(SHEET_URL, {
           headers: {
@@ -146,11 +173,10 @@ export function useSheetData() {
           throw new Error('Planilha vazia')
         }
 
-        console.log('📄 CSV recebido, processando...')
-
         const workbook = XLSX.read(csvText, { 
           type: 'string',
-          raw: false,
+          raw: true,  // MUDANÇA: true ao invés de false
+          cellDates: false,  // ADICIONE: não converte para Date automaticamente
           dateNF: 'dd/mm/yyyy'
         })
 
@@ -161,24 +187,19 @@ export function useSheetData() {
 
         const worksheet = workbook.Sheets[sheetName]
         const rawData = XLSX.utils.sheet_to_json(worksheet, {
-          raw: false,
-          defval: ''
+          raw: true,  // MUDANÇA: true ao invés de false
+          defval: '',
+          dateNF: 'dd/mm/yyyy'
         })
-
-        console.log('📊 Dados brutos:', rawData.length, 'linhas')
 
         if (!rawData || rawData.length === 0) {
           throw new Error('Nenhum dado encontrado')
         }
 
-        const cleanData = validateAndCleanData(rawData)
-
-        console.log('✅ Dados processados:', cleanData.length, 'registros válidos')
-
-        return cleanData
+        return validateAndCleanData(rawData)
 
       } catch (error) {
-        console.error('❌ Erro ao buscar dados:', error)
+        console.error('Erro ao buscar dados:', error)
         throw error
       }
     },
@@ -195,18 +216,18 @@ export function useTrackingSearch(query: string) {
     if (!item || !query) return false
 
     try {
-      const pedido = String(item.Pedido || '').trim()
+      const pedidoSenior = String(item.Pedido || '').trim()
+      const pedidoQepta = String(item.QEPTA || '').trim()
       const notaFiscal = String(item['Nota Fiscal'] || '').trim()
       const queryTrimmed = String(query).trim()
 
       if (!queryTrimmed) return false
 
-      return pedido === queryTrimmed || 
-             notaFiscal === queryTrimmed 
-             //pedido.includes(queryTrimmed) 
-             //notaFiscal.includes(queryTrimmed)
-    } catch (error) {
-      console.warn('Erro na busca:', error)
+      return pedidoSenior === queryTrimmed || 
+             pedidoQepta === queryTrimmed ||
+             notaFiscal === queryTrimmed
+
+    } catch {
       return false
     }
   }) || null
